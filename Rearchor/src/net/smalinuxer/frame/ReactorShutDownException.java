@@ -1,4 +1,4 @@
-package net.smaliunxer.Reactor;
+package net.smalinuxer.frame;
 
 public class ReactorShutDownException extends Exception {
 

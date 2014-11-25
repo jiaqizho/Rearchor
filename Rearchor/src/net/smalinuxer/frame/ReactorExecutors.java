@@ -1,4 +1,4 @@
-package net.smaliunxer.Reactor;
+package net.smalinuxer.frame;
 
 import java.util.Collection;
 import java.util.List;
@@ -12,12 +12,9 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
-* 我要封装状�?模式
-* 	进来的runnable用聚合来�?
-* 
-* 	泛型为CallAble
-*
-*/
+ * insteal
+ * the status has some problem (￣へ￣||)
+ */
 public class ReactorExecutors<T>{
 	
 	private ExecutorService handleReactor = Executors.newCachedThreadPool();
@@ -35,10 +32,14 @@ public class ReactorExecutors<T>{
 	public ReactorExecutors(){
 		this.mSemaphore = new Semaphore(MAX_REACT_NUM);
 		lock = new ReentrantLock();
+		turnOn();
+	}
+	
+	public synchronized void turnOn(){
+		status = true;
 	}
 	
 	public void shutdown(){
-		
 		lock.lock();	//由于这里sychronized不太好用
 		if(status != false){
 			status = false;
@@ -61,7 +62,7 @@ public class ReactorExecutors<T>{
 	
 	/*
 	 * 
-	 * 通过聚合类控�?信号量应该在runnable中进行控�?
+	 * 通过聚合类控制,信号量应该在runnable中进行控制?
 	private Semaphore mSemaphore = null;
 	
 	public ReactorExecutors(){
@@ -77,7 +78,7 @@ public class ReactorExecutors<T>{
 		try {
 			mSemaphore.acquire();
 		} catch (InterruptedException e) {
-			//党被打断的时候就是�?出的时�?
+			//党被打断的时候就是退出的时候
 		}
 		handleReactor.execute(commend);
 		mSemaphore.release();
@@ -97,14 +98,14 @@ public class ReactorExecutors<T>{
 		try {
 			mSemaphore.acquire();
 		} catch (InterruptedException e) {
-			//TODO 党被打断的时候就是�?出的时�?
+			//TODO 党被打断的时候就是退出的时候
 		}
 		Future<?> future = handleReactor.submit(commend);
 		mSemaphore.release();
 		return future;
 	}
 	
-	public Future<?> reactInPoolforResult(Callable<?> commend) throws ReactorShutDownException{
+	public Future<T> reactInPoolforResult(Callable<T> commend) throws ReactorShutDownException{
 		try {
 			cherkStatus();
 		} catch (ReactorShutDownException e) {
@@ -113,9 +114,9 @@ public class ReactorExecutors<T>{
 		try {
 			mSemaphore.acquire();
 		} catch (InterruptedException e) {
-			//TODO 当被打断的时候就是�?出的时�?
+			//TODO 当被打断的时候就是退出的时候
 		}
-		Future<?> future = handleReactor.submit(commend);
+		Future<T> future = handleReactor.submit(commend);
 		mSemaphore.release();
 		return future;
 	}
