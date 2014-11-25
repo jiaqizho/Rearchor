@@ -12,12 +12,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
-* 鎴戣灏佽鐘舵?妯″紡
-* 	杩涙潵鐨剅unnable鐢ㄨ仛鍚堟潵鍋?
-* 
-* 	娉涘瀷涓篊allAble
-*
-*/
+ * not finish yet
+ */
 public class ReactorExecutors<T>{
 	
 	private ExecutorService handleReactor = Executors.newCachedThreadPool();
@@ -38,8 +34,7 @@ public class ReactorExecutors<T>{
 	}
 	
 	public void shutdown(){
-		
-		lock.lock();	//鐢变簬杩欓噷sychronized涓嶅お濂界敤
+		lock.lock();	//由于这里sychronized不太好用
 		if(status != false){
 			status = false;
 			lock.unlock();
@@ -49,9 +44,9 @@ public class ReactorExecutors<T>{
 				}
 			} catch (InterruptedException e) {
 				handleReactor.shutdownNow();
-				//TODO 鏃ュ織璁板綍
+				//TODO 日志记录
 			}
-			//TODO 鍏抽棴鍏朵粬
+			//TODO 关闭其他
 		}
 	}
 	
@@ -61,7 +56,7 @@ public class ReactorExecutors<T>{
 	
 	/*
 	 * 
-	 * 閫氳繃鑱氬悎绫绘帶鍒?淇″彿閲忓簲璇ュ湪runnable涓繘琛屾帶鍒?
+	 * 通过聚合类控制,信号量应该在runnable中进行控制?
 	private Semaphore mSemaphore = null;
 	
 	public ReactorExecutors(){
@@ -77,7 +72,7 @@ public class ReactorExecutors<T>{
 		try {
 			mSemaphore.acquire();
 		} catch (InterruptedException e) {
-			//鍏氳鎵撴柇鐨勬椂鍊欏氨鏄?鍑虹殑鏃跺?
+			//党被打断的时候就是退出的时候
 		}
 		handleReactor.execute(commend);
 		mSemaphore.release();
@@ -97,14 +92,14 @@ public class ReactorExecutors<T>{
 		try {
 			mSemaphore.acquire();
 		} catch (InterruptedException e) {
-			//TODO 鍏氳鎵撴柇鐨勬椂鍊欏氨鏄?鍑虹殑鏃跺?
+			//TODO 党被打断的时候就是退出的时候
 		}
 		Future<?> future = handleReactor.submit(commend);
 		mSemaphore.release();
 		return future;
 	}
 	
-	public Future<?> reactInPoolforResult(Callable<?> commend) throws ReactorShutDownException{
+	public Future<T> reactInPoolforResult(Callable<T> commend) throws ReactorShutDownException{
 		try {
 			cherkStatus();
 		} catch (ReactorShutDownException e) {
@@ -113,9 +108,9 @@ public class ReactorExecutors<T>{
 		try {
 			mSemaphore.acquire();
 		} catch (InterruptedException e) {
-			//TODO 褰撹鎵撴柇鐨勬椂鍊欏氨鏄?鍑虹殑鏃跺?
+			//TODO 当被打断的时候就是退出的时候
 		}
-		Future<?> future = handleReactor.submit(commend);
+		Future<T> future = handleReactor.submit(commend);
 		mSemaphore.release();
 		return future;
 	}
