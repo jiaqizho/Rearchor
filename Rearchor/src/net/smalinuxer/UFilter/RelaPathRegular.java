@@ -48,8 +48,8 @@ public class RelaPathRegular extends StandardFilter{
 	}
 
 	private boolean isRela(String url) {
-		Pattern pattern = Pattern.compile("^[\\./].*");
+		Pattern pattern = Pattern.compile("javascript:.*");
 		Matcher matcher = pattern.matcher(url);
-		return matcher.matches();
+		return !matcher.matches();
 	}
 }

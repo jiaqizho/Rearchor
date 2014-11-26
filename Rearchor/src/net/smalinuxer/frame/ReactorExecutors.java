@@ -13,7 +13,6 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * insteal
- * the status has some problem (￣へ￣||)
  */
 public class ReactorExecutors<T>{
 	
@@ -27,7 +26,7 @@ public class ReactorExecutors<T>{
 	
 	protected Semaphore mSemaphore;
 	
-	private static final int MAX_REACT_NUM = 10;
+	private static final int MAX_REACT_NUM = 1000;
 	
 	public ReactorExecutors(){
 		this.mSemaphore = new Semaphore(MAX_REACT_NUM);

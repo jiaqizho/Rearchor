@@ -29,8 +29,12 @@ import net.smalinuxer.UFilter.StandardFilter.Substance;
  * deduplication is the all top abs filter write
  * we will iteration to find all top abs filter invoke deduplication
  * 
+ * next step i should add the filter in poll
+ * 
  * @author smalinuxer@gmail.com
  * @param <T> see the UFilter
+ * @version 0.1 
+ * 	 
  */
 public class UReactChian<T> implements UFilter<T>{
 
@@ -44,21 +48,13 @@ public class UReactChian<T> implements UFilter<T>{
 		collection = new ArrayList<UFilter<T>>();
 	}
 	
-	protected UReactChian<T> add(UFilter<T> filter){
+	public UReactChian<T> add(UFilter<T> filter){
 		collection.add(filter);
 		return this;
 	}
 	
 	@Override
 	public T filter(T obj) throws RegularRepeatException {
-		if(mAnalyzer != null){
-			
-			if(!collection.addAll((Collection<? extends UFilter<T>>) mAnalyzer.getList())){
-				for(UFilter<T> filter :mAnalyzer.getList()){
-					collection.add(filter);
-				}
-			}
-		}
 		if(!hasRepeat(collection)){
 			throw new RegularRepeatException();
 		}
@@ -108,7 +104,11 @@ public class UReactChian<T> implements UFilter<T>{
 	}
 
 	public void setAnalyzer(UAnalyzer<? extends UFilter<T>> analyzer){
-		mAnalyzer = analyzer;
+		if(!collection.addAll((Collection<? extends UFilter<T>>) analyzer.getList())){
+			for(UFilter<T> filter :mAnalyzer.getList()){
+				collection.add(filter);
+			}
+		}
 	}
 
 	/**
@@ -131,6 +131,7 @@ public class UReactChian<T> implements UFilter<T>{
 	
 	/* 
 	 * test
+	 * and interface
 	 **/ 
 	public static void main(String[] args) throws Exception {
 		UReactChian<Substance> chian = new UReactChian<Substance>();

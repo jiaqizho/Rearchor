@@ -1,5 +1,6 @@
 package net.smalinuxer.frame;
 
+import java.util.HashSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -8,6 +9,8 @@ import net.smalinuxer.frame.DataReaction.ReactData;
 
 public class DataReaction extends AbsReaction<String,ReactData> implements Callable<ReactData>{
 
+	private static HashSet<String> set = new HashSet<String>();
+	
 	/**
 	 * 		Threalpool -> data -> index
 	 */
@@ -40,12 +43,20 @@ public class DataReaction extends AbsReaction<String,ReactData> implements Calla
 	 */
 	@Override
 	public ReactData call() throws Exception {
+		synchronized(new Object()){
+			if(set.contains(data.url)){
+				return null;
+			}
+			set.add(data.url);
+		}
+		System.out.println(data.url);
 		String content = handle();
 		if(content == null){
 			fail2React(this);
 			return null;
 		}
 		data.content = content;
+		
 		return data;
 	}
 

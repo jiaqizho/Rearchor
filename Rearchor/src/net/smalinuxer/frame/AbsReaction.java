@@ -38,6 +38,7 @@ public abstract class AbsReaction<K,V> implements Reaction<K,V>,Callable<V>{
 		try {
 			URL url = new URL(mUrl);
 			conn = (HttpURLConnection)url.openConnection();
+			conn.setConnectTimeout(2000);
 			reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
 			Thread.sleep(0);
 			String line = null;
@@ -55,6 +56,7 @@ public abstract class AbsReaction<K,V> implements Reaction<K,V>,Callable<V>{
 				}
 			} catch (IOException e) {
 			}
+			conn.disconnect();
 		}
 		return sb;
 	}
