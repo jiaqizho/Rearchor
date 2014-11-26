@@ -13,7 +13,6 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * insteal
- * the status has some problem (￣へ￣||)
  */
 public class ReactorExecutors<T>{
 	
