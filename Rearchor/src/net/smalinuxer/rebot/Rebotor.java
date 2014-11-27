@@ -19,32 +19,6 @@ import net.smalinuxer.frame.ReactorExecutors;
 import net.smalinuxer.frame.ReactorShutDownException;
 import net.smalinuxer.frame.TimeCallable;
 
-/**
- * expand : 
- * 	1.Generics
- * 
- * 
- * 		TimeCallable<ReactData> callable = new TimeCallable<ReactData>(new DataReaction("http://www.baidu.com"),new ReactorExecutors<ReactData>());
-		try {
-			Future<ReactData> future = callable.start();
-			ReactData data = future.get();
-			System.out.println(data != null ? data.content : "null");
-		} catch (ReactorShutDownException | InterruptedException | ExecutionException e1) {
-			//inposiable
-			e1.printStackTrace();
-		} 
- * 
- * 
- * UReactChian<Substance> chian = new UReactChian<Substance>();
-		chian.setAnalyzer(StandardFilter.produceAnalyzer());
-		Substance sub = new Substance();
-		Substance sb2 = chian.filter(sub);
-		sb2.printAllTarget();
- *
- *
- *
- *http://www.jxgxyz.com/
- */
 public class Rebotor implements Searchor {
 	
 	private HashSet<String> set;
