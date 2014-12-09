@@ -3,22 +3,22 @@ package net.smalinuxer.rebot;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.HashSet;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import net.smalinuxer.lucene.frame.IndexWriterQueue;
 import net.smalinuxer.rebot.UFilter.RegularRepeatException;
 import net.smalinuxer.rebot.UFilter.StandardFilter;
+import net.smalinuxer.rebot.UFilter.StandardFilter.Substance;
 import net.smalinuxer.rebot.UFilter.UAnalyzer;
 import net.smalinuxer.rebot.UFilter.UFilter;
 import net.smalinuxer.rebot.UFilter.UReactChian;
-import net.smalinuxer.rebot.UFilter.StandardFilter.Substance;
 import net.smalinuxer.rebot.frame.DataReaction;
+import net.smalinuxer.rebot.frame.DataReaction.ReactData;
 import net.smalinuxer.rebot.frame.ReactorExecutors;
 import net.smalinuxer.rebot.frame.ReactorShutDownException;
 import net.smalinuxer.rebot.frame.TimeCallable;
-import net.smalinuxer.rebot.frame.DataReaction.ReactData;
 
 /**
  * expand : 
@@ -45,6 +45,15 @@ import net.smalinuxer.rebot.frame.DataReaction.ReactData;
  *
  *
  *http://www.jxgxyz.com/
+ *
+ *
+ *
+ *1.二进制文件
+ *2.矫正
+ *3.类似voll的东西
+ *
+ *
+ *
  */
 public class Rebotor implements Searchor {
 	
@@ -93,7 +102,7 @@ public class Rebotor implements Searchor {
 						} catch (MalformedURLException e1) {
 						}
 					}
-					if(loadIndex(str) || !url.getHost().equals("www.smalinuxer.net")){
+					if(loadIndex(str) || !url.getHost().equals("www.smalinuxer.net") || isfrag(str)){
 						obj.urls.remove(str);
 					}
 				}
@@ -108,6 +117,16 @@ public class Rebotor implements Searchor {
 		
 	}
 	
+	
+	protected static boolean isfrag(String str) {
+		for(int i = 0 ; i < str.length() ; i++){
+			if(str.charAt(i) == '#'){
+				return true;
+			}
+		}
+		return false;
+	}
+
 	protected Substance add(String url){
 		TimeCallable<ReactData> callable = new TimeCallable<ReactData>(new DataReaction(url),threadPool);
 		Substance sub = null;
@@ -161,8 +180,9 @@ public class Rebotor implements Searchor {
 	public static void main(String[] args) {
 //		long l = System.currentTimeMillis();
 		Substance sub = r.add("http://www.smalinuxer.net/");
-		test(sub);
+		new Rebotor().test(sub);
 //		System.out.println("finish: time:" + (System.currentTimeMillis() - l));
+		
 	}
 
 	/**
@@ -177,11 +197,17 @@ public class Rebotor implements Searchor {
 		}
 	}
 	
+	private IndexWriterQueue queue = new IndexWriterQueue(); 
 	
-	static void test(Substance sub){
+	void test(Substance sub){
 		if(sub == null){
 			return ;
 		}
+		
+		if(sub.url != null && sub.Content != null){
+			queue.add(sub);
+		}
+		
 		for(int i = 0 ; i < sub.urls.size() ; i++){
 			test(r.add(sub.urls.get(i)));
 		}

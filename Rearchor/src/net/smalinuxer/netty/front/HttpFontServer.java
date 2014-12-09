@@ -12,11 +12,11 @@ import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponseEncoder;
 import io.netty.handler.stream.ChunkedWriteHandler;
+import net.smalinuxer.lucene.frame.RetinReaderFinder;
 
 public class HttpFontServer {
-	private static final String DEFAULT_URI = "/src/";
 	
-	public void run(final int port,final String uri) {
+	public void run(final RetinReaderFinder retinReaderFinder,final int port) {
 		EventLoopGroup bossGroup = null;
 		EventLoopGroup workerGroup = null;
 		try {
@@ -34,15 +34,13 @@ public class HttpFontServer {
 						ch.pipeline().addLast("http-aggregator",new HttpObjectAggregator(65536));
 						ch.pipeline().addLast("http-encoder",new HttpResponseEncoder());
 						ch.pipeline().addLast("http-chunked",new ChunkedWriteHandler());
-						ch.pipeline().addLast("fileServerHandler",new HttpFrontServerHandler(uri));
+						ch.pipeline().addLast("auth-chrcked",new AuthCherkHandler());
+						ch.pipeline().addLast("fileServerHandler",new HttpFrontServerHandler(retinReaderFinder));
 					}
 					
 				});
 			
-			//绑定端口,同步等待成功
 			ChannelFuture future = b.bind(port).sync();
-			
-			//等待服务器监听端口关闭
 			future.channel().closeFuture().sync();
 		} catch (InterruptedException e) {
 			e.printStackTrace();
@@ -54,12 +52,11 @@ public class HttpFontServer {
 				bossGroup.shutdownGracefully();
 			}
 		}
-		
 	}
 	
 	public static void main(String[] args) {
 		int port = 10087;
-		new HttpFontServer().run(port, DEFAULT_URI);
+		new HttpFontServer().run(RetinReaderFinder.newInstance(),port);
 	}
 	
 }

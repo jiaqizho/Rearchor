@@ -17,7 +17,7 @@ import org.apache.lucene.search.FieldCache.Ints;
  * 操作评分
  */
 public class MainScoreProvider extends CustomScoreProvider {
-
+	
 	Ints scores;
 	
 	public MainScoreProvider(AtomicReaderContext context) {
@@ -37,6 +37,7 @@ public class MainScoreProvider extends CustomScoreProvider {
 	@Override
 	public float customScore(int doc, float subQueryScore, float valSrcScore)
 			throws IOException {
+		
 		//如何更具doc获取相应的field值
 		int score = scores.get(doc);
 		

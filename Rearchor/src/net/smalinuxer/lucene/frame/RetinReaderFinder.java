@@ -1,14 +1,11 @@
 package net.smalinuxer.lucene.frame;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.StringReader;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -19,22 +16,18 @@ import net.smalinuxer.lucene.utils.MMSegAnalyzer;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.IntField;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.valuesource.OrdFieldSource;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.search.highlight.Fragmenter;
 import org.apache.lucene.search.highlight.Highlighter;
 import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
@@ -43,11 +36,19 @@ import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
 import org.apache.lucene.search.highlight.SimpleSpanFragmenter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.Version;
 
 public class RetinReaderFinder {
 	
-	private DirectoryReader reader;
+	private static RetinReaderFinder finder;
+	
+	public static synchronized RetinReaderFinder newInstance(){
+		if(finder == null){
+			finder = new RetinReaderFinder();
+		}
+		return finder; 
+	}
+	
+	private static DirectoryReader reader;
 	
 	private Directory directory;
 	
@@ -55,8 +56,9 @@ public class RetinReaderFinder {
 	
 	private Timer timer;	//should be close
 	
-	public RetinReaderFinder(){
+	private RetinReaderFinder(){
 		timer = new Timer();  
+		
 		/*
 		SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 		Date startDate = null;
@@ -75,13 +77,17 @@ public class RetinReaderFinder {
 			}
 		},LuceneConfig.LUCENE_REFRESH_START_DATE_NOW,LuceneConfig.LUCENE_REFRESH_READER);
 		try {
-//			directory = FSDirectory.open(new File(LuceneConfig.LUCENE_STORE_DIR));
-			directory = FSDirectory.open(new File(STORE_DIR));
+			String path = System.getProperty("user.dir") + LuceneConfig.LUCENE_STORE_DIR;
+			directory = FSDirectory.open(new File(path));
 			reader = DirectoryReader.open(directory);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
+	
+	
+	
+	
 	/*
 	public void searToHighlighterCss(Analyzer analyzer,IndexSearcher searcher) throws IOException, InvalidTokenOffsetsException{  
         Term term =new Term("sex", "男生");//查询条件，意思是我要查找性别为“男生”的人  
@@ -113,25 +119,23 @@ public class RetinReaderFinder {
             System.out.println("查询出人员:"+str);  
         }  
     }  */
-	
-	private List<IndexData> search(String keyWord,int num) {
+
+	/**
+	 * @param keyWord
+	 * @param num
+	 * @return
+	 * @deprecated
+	 */
+	public List<IndexData> search0(List<String> keyWords,int num) {
 		List<IndexData> list = null;
 		MMSegAnalyzer analyzer = null;
 		try {
 			IndexSearcher searcher = getSearcher();
 			analyzer = new MMSegAnalyzer();
-			/*
-			KeyWordQueryParse parse = new KeyWordQueryParse("content");
-			Query sub = parse.parse(keyWord);
-			*/
-			Term term =new Term("content", keyWord);  
-		    TermQuery sub =new TermQuery(term);
-			OrdFieldSource source = new OrdFieldSource("score");
-			FunctionQuery score = new FunctionQuery(source);	
-			Query query = new MainScoreQuery(sub,score);
+			PhraseQuery query = new PhraseQuery();
+			for(String str : keyWords) query.add(new Term("content", str));
 			TopDocs td = searcher.search(query, num);
 			
-//	        SimpleHTMLFormatter formatter = new SimpleHTMLFormatter("<span class=\"hightlighterCss\">","</span>");  
 			SimpleHTMLFormatter formatter = new SimpleHTMLFormatter("<b style=\"color:red\">","</b>");
 	        QueryScorer scorer=new QueryScorer(query);  
 	        Fragmenter fragmenter = new SimpleSpanFragmenter(scorer);  
@@ -140,17 +144,14 @@ public class RetinReaderFinder {
 	        
 	        list = new ArrayList<IndexWriterQueue.IndexData>();
 			for(ScoreDoc sDoc : td.scoreDocs){
-				System.out.println("----2");
 				Document doc = searcher.doc(sDoc.doc);
-				String value = doc.getField("content").toString();
+				String value = doc.get("content");
 	            TokenStream tokenStream = analyzer.tokenStream("content", new StringReader(value));    
 	            String _frag = highlight.getBestFragment(tokenStream, value);
-	            
 	            IndexData data = new IndexData();
-//	            data.url = doc.getField("url").toString();
-//	            data.title = doc.getField("title").toString();;
+	            data.url = doc.get("url");
+	            data.title = doc.get("title");
 	            data.content = _frag;
-	            System.out.println(data);
 	            list.add(data);
 			}
 		} catch (IOException e) {
@@ -166,7 +167,110 @@ public class RetinReaderFinder {
 		return list;
 	}
 	
-	private synchronized IndexSearcher getSearcher() {
+	
+	/**
+	 * @param keyWord
+	 * @param num
+	 * @return
+	 */
+	public List<IndexData> search0(String keyWord,int num) {
+		List<IndexData> list = null;
+		MMSegAnalyzer analyzer = null;
+		try {
+			IndexSearcher searcher = getSearcher();
+			analyzer = new MMSegAnalyzer();
+			KeyWordQueryParse parse = new KeyWordQueryParse("content",analyzer);
+			Query query = parse.parse(keyWord);
+//			Term term =new Term("content", keyWord);	
+//	        TermQuery query =new TermQuery(term);  
+			TopDocs td = searcher.search(query, num);
+			
+//	        SimpleHTMLFormatter formatter = new SimpleHTMLFormatter("<span class=\"hightlighterCss\">","</span>");  
+			SimpleHTMLFormatter formatter = new SimpleHTMLFormatter("<b style=\"color:red\">","</b>");
+	        QueryScorer scorer=new QueryScorer(query);  
+	        Fragmenter fragmenter = new SimpleSpanFragmenter(scorer);  
+	        Highlighter highlight=new Highlighter(formatter,scorer);  
+	        highlight.setTextFragmenter(fragmenter);  
+	        
+	        list = new ArrayList<IndexWriterQueue.IndexData>();
+			for(ScoreDoc sDoc : td.scoreDocs){
+				Document doc = searcher.doc(sDoc.doc);
+				String value = doc.get("content");
+	            TokenStream tokenStream = analyzer.tokenStream("content", new StringReader(value));    
+	            String _frag = highlight.getBestFragment(tokenStream, value);
+	            IndexData data = new IndexData();
+	            data.url = doc.get("url");
+	            data.title = doc.get("title");
+	            data.content = _frag;
+	            list.add(data);
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (InvalidTokenOffsetsException e) {
+			e.printStackTrace();
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}  finally{
+			if(analyzer != null){
+				analyzer.close();
+				analyzer=null;
+			}
+		}
+		return list;
+	}
+	
+	
+	public List<IndexData> search(String keyWord,int num) {
+		List<IndexData> list = null;
+		MMSegAnalyzer analyzer = null;
+		try {
+			IndexSearcher searcher = getSearcher();
+			analyzer = new MMSegAnalyzer();
+			/*
+			KeyWordQueryParse parse = new KeyWordQueryParse("content",analyzer);
+			Query sub = parse.parse(keyWord);
+			*/
+			Term term =new Term("content", keyWord);  
+			WildcardQuery sub = new WildcardQuery(term);
+			OrdFieldSource source = new OrdFieldSource("score");
+			FunctionQuery score = new FunctionQuery(source);	
+			Query query = new MainScoreQuery(sub,score);
+			TopDocs td = searcher.search(query, num);
+			
+//	        SimpleHTMLFormatter formatter = new SimpleHTMLFormatter("<span class=\"hightlighterCss\">","</span>");  
+			SimpleHTMLFormatter formatter = new SimpleHTMLFormatter("<b style=\"color:red\">","</b>");
+	        QueryScorer scorer=new QueryScorer(query);  
+	        Fragmenter fragmenter = new SimpleSpanFragmenter(scorer);  
+	        Highlighter highlight=new Highlighter(formatter,scorer);  
+	        highlight.setTextFragmenter(fragmenter);  
+	        
+	        list = new ArrayList<IndexWriterQueue.IndexData>();
+			for(ScoreDoc sDoc : td.scoreDocs){
+				Document doc = searcher.doc(sDoc.doc);
+				String value = doc.get("content");
+	            TokenStream tokenStream = analyzer.tokenStream("content", new StringReader(value));    
+	            String _frag = highlight.getBestFragment(tokenStream, value);
+	            
+	            IndexData data = new IndexData();
+	            data.url = doc.get("url");
+	            data.title = doc.get("title");
+	            data.content = _frag;
+	            list.add(data);
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (InvalidTokenOffsetsException e) {
+			e.printStackTrace();
+		}  finally{
+			if(analyzer != null){
+				analyzer.close();
+				analyzer=null;
+			}
+		}
+		return list;
+	}
+	
+	protected synchronized IndexSearcher getSearcher() {
 		try{
 			if(reader != null){
 				//不处理同步因为,就一点差别无所谓
@@ -188,10 +292,10 @@ public class RetinReaderFinder {
 		return searcher;
 	}
 	
-	/**
-	 * 建立索引
-	 * 
-	 */
+/*	
+	*//**
+	 *  test
+	 *//*
 	public void index() {
 		IndexWriter writer = null;
 		try {
@@ -228,12 +332,8 @@ public class RetinReaderFinder {
 			}
 		}
 	}
-	
-	private static final String STORE_DIR = "C:\\Users\\user\\Desktop\\android开源\\me.smali.opensource\\Lucene\\test_store";
-
-	private static final String INDEXED_DIR = "C:\\Users\\user\\Desktop\\android开源\\me.smali.opensource\\Lucene\\test_chinese";
-	
-	
+	*/
+	/*
 	public String readFile(File file) throws IOException{
 		BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
 		StringBuffer sb = new StringBuffer();
@@ -244,14 +344,30 @@ public class RetinReaderFinder {
 		}
 		return sb.toString();
 	}
+	*/
 	
-
 	/**
 	 * not perferf
 	 * @param args
+	 * @throws InvalidTokenOffsetsException 
+	 * @throws IOException 
 	 */
+	/*
+	public static void main(String[] args) throws IOException, InvalidTokenOffsetsException {
+//		new RetinReaderFinder().index();
+//		String seacher = new String("SSL".getBytes("UTF-8"),"UTF-8");
+		List<IndexData> list = new RetinReaderFinder().search0("ssl", LuceneConfig.LUCENE_SHOW_NUM);
+		for(IndexData data : list){
+			System.out.println(data);
+		}
+		
+//		new RetinReaderFinder().searToHighlighterCss(new MMSegAnalyzer(), new RetinReaderFinder().getSearcher());
+	}*/
 	public static void main(String[] args) {
-		new RetinReaderFinder().index();
-		new RetinReaderFinder().search("abc", 10);
+		List<IndexData> list = new RetinReaderFinder().search0("ssl", LuceneConfig.LUCENE_SHOW_NUM);
+		for(IndexData data : list){
+			System.out.println(data);
+		}
 	}
+	
 }
