@@ -37,10 +37,10 @@ public class TimeCallable<T> {
 				if(!future.isCancelled()){
 					future.cancel(true);
 				}
-				
 				if(callAble.isRecall()){
 					future.cancel(true);
 				}
+				mTimer.cancel();
 			}
 			
 		}, DEFULAT_TIME_TIMEOUT);
@@ -77,7 +77,7 @@ public class TimeCallable<T> {
 	public static void main(String[] args) {
 		TimeCallable<ReactData> callable = new TimeCallable<ReactData>(new DataReaction("http://www.baidu.com"),new ReactorExecutors<ReactData>());
 		try {
-			Future<ReactData> future = callable.start();
+			Future<ReactData> future = callable.start();	
 			ReactData data = future.get();
 			System.out.println(data != null ? data.content : "null");
 		} catch (ReactorShutDownException | InterruptedException | ExecutionException e1) {

@@ -34,6 +34,7 @@ import net.smalinuxer.lucene.frame.IndexWriterQueue;
 import net.smalinuxer.lucene.frame.IndexWriterQueue.IndexData;
 import net.smalinuxer.lucene.frame.RetinReaderFinder;
 import net.smalinuxer.lucene.utils.LuceneConfig;
+import net.smalinuxer.rebot.Searchor;
 
 public class HttpFrontServerHandler extends
 		SimpleChannelInboundHandler<FullHttpRequest> {
@@ -74,14 +75,17 @@ public class HttpFrontServerHandler extends
 		uri = URLDecoder.decode(uri,"UTF-8");
 		if (uri.equals("/searcher") || uri.equals("/searcher/")) {
 			sendContent(ctx);
-		} else {
-			if(uri.substring(1, 8).equals("result?") && uri.substring(8, 10).equals("q=")){
-				String search = uri.substring(10, uri.length());
-				List<IndexWriterQueue.IndexData> list = handler(search);
-				sendResutlt(ctx,list);
-			} else{
-				sendError(ctx, FORBIDDEN);
-			}
+		} else if(uri.substring(1, 8).equals("result?") && uri.substring(8, 10).equals("q=")){
+			String search = uri.substring(10, uri.length());
+			List<IndexWriterQueue.IndexData> list = handler(search);
+			sendResutlt(ctx,list);
+		} else if(uri.substring(1, 10).equals("redirect?") && uri.substring(10, 13).equals("re=")){ 
+			//http://127.0.0.1:10086/redirect?re=http://www.baidu.com;
+			String url = uri.substring(13, uri.length());
+			System.out.println(url);
+			sendRedirect(ctx, url);
+		}else {
+			sendError(ctx, FORBIDDEN);
 		}
 	}
 	
@@ -99,8 +103,22 @@ public class HttpFrontServerHandler extends
 			buf.append("</div>\r\n");
 		}
 		for(IndexData data :list){
+			/*
+			 * 
+			 * http://127.0.0.1:10086/redirect?re=http://www.baidu.com;
+			 * 
+			<p><span style="font-size: 24px; font-weight: bold; color: rgb(86, 132, 178);">演示 - 在线HTML编辑器</span></p>
+			<p><span style="color: rgb(0, 160, 0);">kindeditor.net/demo/php</span></p>
+			<p>默认模式、简单模式、手动加载编辑器、默认模式为代码模式、手动添加CSS文件、只能调整高度,禁止调整大小</p>
+			<p><br />
+				</p>
+			*/
+			String rewriteUrl = "http://" + Searchor.LOCAL_IP + ":" +Searchor.LOCAL_PORT_SERVER + "/redirect?re=" + data.url;   
 			buf.append("<div>\r\n");
-			buf.append(data + "\r\n");
+			buf.append("<div><span style=\"font-size: 24px; font-weight: bold; color: rgb(86, 132, 178);\"><a href=\""+ rewriteUrl +"\">"
+					+ data.title + "</a></span></div>" + "\r\n");
+			buf.append("<div><span style=\"color: rgb(0, 160, 0);\">"+ data.url +"</span></div>" + "\r\n");
+			buf.append("<div>"+data.content+"</div><br/>"+"\r\n");
 			buf.append("</div>\r\n");
 		}
 		buf.append("</body></html>\r\n");

@@ -14,9 +14,27 @@ import io.netty.handler.codec.http.HttpResponseEncoder;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import net.smalinuxer.lucene.frame.RetinReaderFinder;
 
-public class HttpFontServer {
+public class HttpFontServer implements Runnable {
+
+	private Thread thread;
 	
-	public void run(final RetinReaderFinder retinReaderFinder,final int port) {
+	private RetinReaderFinder retinReaderFinder = null;
+	
+	private int port;
+	
+	public HttpFontServer(RetinReaderFinder finder, int port) {
+		this.retinReaderFinder = finder;
+		this.port = port;
+		thread = new Thread(this);
+		thread.start();
+	}
+	
+	public HttpFontServer(int port){
+		this(RetinReaderFinder.newInstance(),port);
+	} 
+	
+	@Override
+	public void run() {
 		EventLoopGroup bossGroup = null;
 		EventLoopGroup workerGroup = null;
 		try {
@@ -39,11 +57,11 @@ public class HttpFontServer {
 					}
 					
 				});
-			
 			ChannelFuture future = b.bind(port).sync();
 			future.channel().closeFuture().sync();
+			System.out.println("2");
 		} catch (InterruptedException e) {
-			e.printStackTrace();
+			Thread.currentThread().interrupt();
 		} finally{
 			if(workerGroup != null){
 				workerGroup.shutdownGracefully();
@@ -54,9 +72,23 @@ public class HttpFontServer {
 		}
 	}
 	
+	/**
+	 * 可能有点暴力
+	 */
+	private void stop() {
+		thread.interrupt();
+		thread = null;
+	}
+	
 	public static void main(String[] args) {
-		int port = 10087;
-		new HttpFontServer().run(RetinReaderFinder.newInstance(),port);
+		HttpFontServer server = new HttpFontServer(8089);
+		System.out.println();
+		try {
+			Thread.sleep(50000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		server.stop();
 	}
 	
 }

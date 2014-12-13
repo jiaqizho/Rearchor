@@ -17,10 +17,19 @@ package net.smalinuxer.rebot;
  *  
  */
 public interface Searchor {
-	/**
-	 * private UFilterChain chian
-	 * 
-	 * private Reaction reaction
-	 */
+
+	//是否使用QUICK_SET
+	public static final boolean USE_QUICK_SET = true;
+	
+	//多久时间放弃原有存储
+	public static final long UPDATE_STORE_DUP_MILLSECORD =  1000 * 60 * 60 * 24 * 2;
+	
+	//爬虫多久重新爬
+	public static final long LONG_TIME_TO_REBUILD = 1000 * 60 * 60 * 24;//1000 * 60 * 60 * 24
+	
+	//Server端口
+	public static final int LOCAL_PORT_SERVER = 10086; 
+	
+	public static final String LOCAL_IP = "127.0.0.1";
 	
 }

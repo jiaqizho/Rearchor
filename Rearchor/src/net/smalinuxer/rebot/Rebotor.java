@@ -1,13 +1,19 @@
 package net.smalinuxer.rebot;
 
+import io.netty.handler.codec.http.HttpServerCodec;
+
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import net.smalinuxer.lucene.frame.IndexWriterQueue;
+import net.smalinuxer.lucene.frame.RetinReaderFinder;
+import net.smalinuxer.netty.front.HttpFontServer;
 import net.smalinuxer.rebot.UFilter.RegularRepeatException;
 import net.smalinuxer.rebot.UFilter.StandardFilter;
 import net.smalinuxer.rebot.UFilter.StandardFilter.Substance;
@@ -63,6 +69,14 @@ public class Rebotor implements Searchor {
 	
 	private UReactChian<Substance> mChain = null;
 	
+	private IndexWriterQueue queue = new IndexWriterQueue(); 
+	
+	private static HttpFontServer httpServer = null;
+	
+	static {
+		httpServer = new HttpFontServer(Searchor.LOCAL_PORT_SERVER);	//开启了font
+	}
+	
 	public Rebotor(ReactorExecutors<ReactData> threadPool,
 			UReactChian<Substance> mChain) {
 		this.threadPool = threadPool;
@@ -75,10 +89,7 @@ public class Rebotor implements Searchor {
 	}
 	
 	/**
-	 * 
 	 * init
-	 * test 方法 
-	 * 
 	 */
 	private void init() {
 		set = new RAMQuickSet<String>();
@@ -111,12 +122,12 @@ public class Rebotor implements Searchor {
 			
 			@Override
 			public Substance deduplication(Substance obj) {
+				//最好不要再这个方法里面执行,因为会增加循环次数
 				return obj;
 			}
 		});
 		
 	}
-	
 	
 	protected static boolean isfrag(String str) {
 		for(int i = 0 ; i < str.length() ; i++){
@@ -158,48 +169,54 @@ public class Rebotor implements Searchor {
 	}
 	
 	/**
-	 * fail
 	 * @param url
 	 */
 	private void buildIndex(String url) {
 		set.add(url);
-		// TODO Auto-generated method stub
 	}
 
-	/**
-	 * succes
-	 * @param data
-	 */
-	private void buildIndex(ReactData data) {
-		set.add(data.url);
-		// TODO Auto-generated method stub
-	}
-	
-	static Rebotor r = new Rebotor();
-	
+
 	public static void main(String[] args) {
 //		long l = System.currentTimeMillis();
-		Substance sub = r.add("http://www.smalinuxer.net/");
-		new Rebotor().test(sub);
+		Rebotor re = new Rebotor();
+		re.recurAdd(re,re.add("http://www.smalinuxer.net/"));
+		re.reCycle();
 //		System.out.println("finish: time:" + (System.currentTimeMillis() - l));
-		
+		System.out.println();
 	}
 
 	/**
-	 * 
-	 * 一定需要被调用
+	 * 结束状态
 	 */
 	private void stop(){
 		try {
 			set.store();
+			threadPool.shutdown();
+			queue.shutdown();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
+
+	private static int count = 1;
 	
-	private IndexWriterQueue queue = new IndexWriterQueue(); 
+	private void reCycle() {
+		stop();
+		final Timer timer = new Timer();
+		timer.schedule(new TimerTask() {
+			
+			@Override
+			public void run() {
+				System.out.println("times : " + count++);
+				Rebotor re = new Rebotor();
+				re.recurAdd(re,re.add("http://www.smalinuxer.net/"));
+				re.reCycle();
+				timer.cancel();
+			}
+		}, Searchor.LONG_TIME_TO_REBUILD);
+	}
 	
-	void test(Substance sub){
+	void recurAdd(Rebotor re, Substance sub){
 		if(sub == null){
 			return ;
 		}
@@ -207,9 +224,9 @@ public class Rebotor implements Searchor {
 		if(sub.url != null && sub.Content != null){
 			queue.add(sub);
 		}
-		
+	
 		for(int i = 0 ; i < sub.urls.size() ; i++){
-			test(r.add(sub.urls.get(i)));
+			recurAdd(re,re.add(sub.urls.get(i)));
 		}
 		
 	}

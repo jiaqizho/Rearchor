@@ -37,6 +37,8 @@ public class IndexWriterQueue implements Runnable {
 	private final BlockingQueue<IndexData> queue;
 
 	private static final String DEFLUAT_TITLE_NAME = "无标题";
+	
+	private Thread currentThread;
 
 	public void add(Substance sub) {
 		IndexData data = new IndexData();
@@ -47,12 +49,14 @@ public class IndexWriterQueue implements Runnable {
 
 	public IndexWriterQueue() {
 		queue = new LinkedBlockingQueue<IndexData>();
-		new Thread(this).start();
+		currentThread = new Thread(this);
+		currentThread.start();
 	}
 
 	public IndexWriterQueue(BlockingQueue<IndexData> queue) {
 		this.queue = queue;
-		new Thread(this).start();
+		currentThread = new Thread(this);
+		currentThread.start();
 	}
 
 	@Override
@@ -65,10 +69,8 @@ public class IndexWriterQueue implements Runnable {
 				builder.addDoc(data);
 			}
 		} catch (InterruptedException e) {
-			e.printStackTrace();
-		} finally {
-
-		}
+			Thread.currentThread().interrupt();
+		} 
 	}
 
 	private static String filterTitle(String content) {
@@ -80,7 +82,10 @@ public class IndexWriterQueue implements Runnable {
 		return DEFLUAT_TITLE_NAME;
 	}
 
-
+	public void shutdown() {
+		currentThread.interrupt();
+	}
+	
 	/*
 	 * public static void main(String[] args) throws MalformedURLException,
 	 * IOException {

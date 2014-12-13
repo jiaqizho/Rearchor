@@ -43,7 +43,7 @@ public abstract class AbsReaction<K,V> implements Reaction<K,V>,Callable<V>{
 			Thread.sleep(0);
 			String line = null;
 			while((line = reader.readLine()) != null){
-				sb.append(line);
+				sb.append(new String(line.getBytes(),"UTF-8"));
 			}
 		} catch (MalformedURLException e) {
 			throw new InterruptedException("url wrong");

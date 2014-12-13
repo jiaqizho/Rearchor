@@ -29,9 +29,7 @@ public class RetinIndexBuilder {
 	private static IndexWriter writer;
 	
 	public RetinIndexBuilder() {
-		
 		synchronized(new Object()){
-			
 			if(writer == null){
 				String path = System.getProperty("user.dir") + LuceneConfig.LUCENE_STORE_DIR;
 				File file = new File(path);
@@ -45,7 +43,7 @@ public class RetinIndexBuilder {
 		            }*/
 					IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_4_10_2, new MMSegAnalyzer());
 					config.setWriteLockTimeout(100000);
-					config.setOpenMode(OpenMode.CREATE);
+					config.setOpenMode(OpenMode.CREATE_OR_APPEND);
 					writer = new IndexWriter(FSDirectory.open(file), config);
 				} catch (IOException e) {
 					e.printStackTrace();
@@ -171,13 +169,9 @@ public class RetinIndexBuilder {
 		try {
 			// 定义script的正则表达式{或<script[^>]*?>[\\s\\S]*?<\\/script>
 			String regEx_script = "<[\\s]*?script[^>]*?>[\\s\\S]*?<[\\s]*?\\/[\\s]*?script[\\s]*?>";
-			// 定义style的正则表达式{或<style[^>]*?>[\\s\\S]*?<\\/style>
 			String regEx_style = "<[\\s]*?style[^>]*?>[\\s\\S]*?<[\\s]*?\\/[\\s]*?style[\\s]*?>";
-			// 定义HTML标签的正则表达式
 			String regEx_html = "<[^>]+>";
-			// 定义一些特殊字符的正则表达式 如：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 			String regEx_special = "\\&[a-zA-Z]{1,10};";
-
 			p_script = Pattern.compile(regEx_script, Pattern.CASE_INSENSITIVE);
 			m_script = p_script.matcher(htmlStr);
 			htmlStr = m_script.replaceAll(""); // 过滤script标签
@@ -195,7 +189,6 @@ public class RetinIndexBuilder {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		
 		
 		return textStr;// 返回文本字符串
 	}

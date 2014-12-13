@@ -44,7 +44,7 @@ public class ReactorExecutors<T>{
 			status = false;
 			lock.unlock();
 			try {
-				if(handleReactor.awaitTermination(DEFUALT_WAIT_TIMEOUT, TimeUnit.MILLISECONDS)){
+				if(!handleReactor.awaitTermination(DEFUALT_WAIT_TIMEOUT, TimeUnit.MILLISECONDS)){
 					handleReactor.shutdownNow();
 				}
 			} catch (InterruptedException e) {
