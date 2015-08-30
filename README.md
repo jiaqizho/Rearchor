@@ -8,6 +8,14 @@ Rearchor
 http://www.smalinuxer.net/?page_id=218
 建议使用IOC进行装配/配置,易于管理;
 
+实现描述:
+--------
+- 责任链制定爬虫规则
+- 请求异常重回线程池请求池
+- 队列-消费者生产者-拥塞控制
+- lucene core 分词 + search高亮 + 某著名词典
+- netty展示页面
+
 可定制接口:
 --------
 
